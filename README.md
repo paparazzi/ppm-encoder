@@ -37,31 +37,36 @@ Fuse Settings
   - High fuse sets sets the bootsize on 328 and the bodlevel in 168
   - Extended fuse sets the bodlevel only on 328 but it sets the bootsize on 168
 
- Low Fuse (same for 168 and 328, with or without bootloader):
+**Low Fuse (same for 168 and 328, with or without bootloader):**
   - **0xDF** : 16Mhz External Oscillator (typically 0xFF on DIYDrones board)
   - **0xC2** : 8Mhz Internal RC Oscillator
 
- High Fuse:
+**High Fuse:**
   - **0xDC** : for 168
   - **0xD8** : for 328 WITH bootloader
   - **0xDF** : for 328 NO bootloader
 
- Extended Fuse:
+**Extended Fuse:**
   - **0xF8** : for 168 WITH bootloader
   - **0xFF** : for 168 NO bootloader
   - **0xFC** : for 328
 
-**Note** that some numerical values refer to fuses containing undefined bits (set to '1' here). Depending on the target device these fuse bits will be read either as '0' or '1'. Verification errors will occur if the values are read back with undefined bits set to '0'.
-For the 168: Everything is fine if the values read from the device are either the same as programmed, or the following values (undefined set to '0'): Extended: 0x00.
-For the 328: Everything is fine if the values read from the device are either the same as programmed, or the following values (undefined set to '0'): Extended: 0x04
+**Note:** some numerical values refer to fuses containing undefined bits (set to '1' here). Depending on the target device these fuse bits will be read either as '0' or '1'. Verification errors will occur if the values are read back with undefined bits set to '0'.
+ - For the 168: Everything is fine if the values read from the device are either the same as programmed, or the following values (undefined set to '0'): Extended: 0x00.
+ - For the 328: Everything is fine if the values read from the device are either the same as programmed, or the following values (undefined set to '0'): Extended: 0x04
+
 (Above note from http://www.engbedded.com/fusecalc)
 
 Sample Commands
 ---------------
--To compile the code for an ATMega168 or ATMega328 board that has a 16MHz crystal with default settings:
+ - To compile the code for an ATMega168 or ATMega328 board that has a 16MHz crystal with default settings:
+   
     $ cd your_ppm-encoder_directory/sw/ppm_encoder
     $ wine make --file=makefile.16Mhz
--If working on windows, drop wine
--To upload the code to your board with a programmer, either directly call avrdude, or adjust the parameters in the makefile and call make program:
+
+ - If working on windows, drop wine
+ - To upload the code to your board with a programmer, either directly call avrdude, or adjust the parameters in the makefile and call make program:
+
     $ avrdude -C /PATH/TO/ALTERNATE/avrdude.conf -c YOUR_PROGRAMMER_NAME -P YOUR_PROG_PORT -p YOUR_MCU -U flash:w:ppm_encoder_v4_3.hex:i
--Check the avrdude help for more details and for how to check and write fuses (be careful). The alternate avrdude.conf file might be needed if your version of avrdude does not have your mcu type defined (i.e. macports avrdude can direct to the Arduino 1.0 avrdude.conf if needed)
+
+ - Check the avrdude help for more details and for how to check and write fuses (be careful). The alternate avrdude.conf file might be needed if your version of avrdude does not have your mcu type defined (i.e. macports avrdude can direct to the Arduino 1.0 avrdude.conf if needed)
