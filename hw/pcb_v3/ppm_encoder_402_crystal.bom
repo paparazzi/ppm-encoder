@@ -1,0 +1,20 @@
+Partlist exported from /home/hendrix/Desktop/ppm_encoder/servo2ppm_v4_3_for_release/eagle_pcb/pcb_v2/ppm_encoder_402_crystal.sch at 2/3/10 4:57 PM
+
+Part Value          Device            Package      Description                         
+C1   10uf/10V       CPOL-EUB/3528-21R B/3528-21R   POLARIZED CAPACITOR, European symbol
+C2   1nf            C-EUC0402         C0402        CAPACITOR, European symbol          
+C3   1nf            C-EUC0402         C0402        CAPACITOR, European symbol          
+C4   22pf           C-EUC0402         C0402        CAPACITOR, European symbol          
+C5   22pf           C-EUC0402         C0402        CAPACITOR, European symbol          
+IC1  ATMEGA168-AU   MEGA48/88/168-AU  TQFP32-08                                        
+ISP  AVR-ISP-6      AVR-ISP-6         AVR-ISP-6    AVR ISP-6 Serial Programming Header 
+JP1  2x1 pin header PINHD-1X2         1X02         PIN HEADER                          
+JP2  I2C            PINHD-1X2         1X02         PIN HEADER                          
+JP3                 PINHD-1X10/90     1X10/90      PIN HEADER                          
+LED1 RED            LEDCHIP-LED0603   CHIP-LED0603 LED                                 
+PPM  3x1 pin header PINHD-1X3         1X03         PIN HEADER                          
+Q1   16Mhz          CRYSTALCTS406     CTS406       CRYSTAL                             
+R1   1K             R-EU_R0402        R0402        RESISTOR, European symbol           
+R2   3.3K           R-EU_R0402        R0402        RESISTOR, European symbol           
+R3   470            R-EU_R0402        R0402        RESISTOR, European symbol           
+R4   10K            R-EU_R0402        R0402        RESISTOR, European symbol           
