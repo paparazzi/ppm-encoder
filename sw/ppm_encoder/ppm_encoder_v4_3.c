@@ -1,12 +1,12 @@
 
 /*********************************************************************************************************
  Title  :   C  file for the rc ppm encoder (servo2ppm_v4_3.c)
- Author:    Chris Efstathiou 
+ Author:    Chris Efstathiou
  E-mail:    hendrix at vivodinet dot gr
  Homepage:  ........................
  Date:      07/Feb/2010
  Compiler:  AVR-GCC with AVR-AS
- MCU type:  ATmega168 
+ MCU type:  ATmega168
  Comments:  This software is FREE. Use it at your own risk.
 *********************************************************************************************************/
 
@@ -27,7 +27,7 @@
 
 
 /********************************************************************************************************/
-/*             Normaly you shouldn't need to change anything below this line but who knows?             */ 
+/*             Normaly you shouldn't need to change anything below this line but who knows?             */
 /********************************************************************************************************/
 
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__)
@@ -41,13 +41,13 @@
 #define RC_PPM_PIN                    2  /* The PPM waveform output pin */
 
 #define RC_SETUP_PORT                 B
-#define RC_SETUP_PIN                  4    
+#define RC_SETUP_PIN                  4
 
 #define RC_TIMER0_TIMSK               TIMSK0 /* Timer0 registers */
 #define RC_TIMER0_TIFR                TIFR0
 #define RC_TIMER0_PRESCALER_REG       TCCR0B
 
-#define RC_TIMER1_TIMSK               TIMSK1 /* Timer1 registers */ 
+#define RC_TIMER1_TIMSK               TIMSK1 /* Timer1 registers */
 #define RC_TIMER1_TIFR                TIFR1
 #define RC_TIMER1_PRESCALER_REG       TCCR1B
 #define RC_TIMER1_MODE_REG            TCCR1A
@@ -92,7 +92,7 @@ a different avr type cpu having at least 2k bytes of flash memory.
 
 
 #if RC_PPM_GEN_CHANNELS > 8
-#error PPM generator max number of channels is 8 
+#error PPM generator max number of channels is 8
 #endif
 #if RC_PPM_GEN_CHANNELS == 0
 #error PPM generator channels cannot be zero!
@@ -100,16 +100,16 @@ a different avr type cpu having at least 2k bytes of flash memory.
 
 #if RC_PPM_GEN_CHANNELS < RC_SERVO_INPUT_CHANNELS
 #undef RC_SERVO_INPUT_CHANNELS
-#define RC_SERVO_INPUT_CHANNELS   RC_PPM_GEN_CHANNELS   
+#define RC_SERVO_INPUT_CHANNELS   RC_PPM_GEN_CHANNELS
 #warning servo channels = PPM generator channels
 #endif
 
-#if RC_PPM_RESET_PW == 0 && RC_PPM_FRAME_LENGTH_MS == 0 
+#if RC_PPM_RESET_PW == 0 && RC_PPM_FRAME_LENGTH_MS == 0
 
 #undef RC_PPM_FRAME_LENGTH_MS
 #undef RC_PPM_RESET_PW
 #define RC_PPM_RESET_PW              5500UL
-#define RC_PPM_FRAME_LENGTH_MS       (RC_PPM_RESET_PW + (RC_PPM_GEN_CHANNELS * RC_SERVO_CENTER_PW)) 
+#define RC_PPM_FRAME_LENGTH_MS       (RC_PPM_RESET_PW + (RC_PPM_GEN_CHANNELS * RC_SERVO_CENTER_PW))
 
 #elif RC_PPM_FRAME_LENGTH_MS == 0 && RC_PPM_RESET_PW > 0
 
@@ -119,16 +119,16 @@ a different avr type cpu having at least 2k bytes of flash memory.
 #elif RC_PPM_FRAME_LENGTH_MS > 0 && RC_PPM_RESET_PW == 0
 
 #undef RC_PPM_RESET_PW
-#define RC_PPM_RESET_PW              (RC_PPM_FRAME_LENGTH_MS -(RC_PPM_GEN_CHANNELS * RC_SERVO_MAX_PW)) 
+#define RC_PPM_RESET_PW              (RC_PPM_FRAME_LENGTH_MS -(RC_PPM_GEN_CHANNELS * RC_SERVO_MAX_PW))
 
 #endif
 
 #if RC_PPM_FRAME_LENGTH_MS > 25000UL
-#warning PPM frame period exceeds 25ms 
+#warning PPM frame period exceeds 25ms
 #endif
 
 #if RC_PPM_RESET_PW <= (5000UL + RC_PPM_CHANNEL_SYNC_PW)
-#warning PPM reset period lower than 5ms 
+#warning PPM reset period lower than 5ms
 #endif
 
 
@@ -170,14 +170,14 @@ a different avr type cpu having at least 2k bytes of flash memory.
 #define TIMER1_PRESCALER_BITS   ((0<<CS12)|(1<<CS11)|(1<<CS10))
 #warning TIMER1 PRESCALER SET TO 64
 
-#else 
+#else
 
 #error NO SUITABLE PRESCALER FOR TIMER1 FOUND!
 
 #endif
 
 /* Now that the timer prescalers are known the conversion of microseconds to timer values follows */
-#define RC_SERVO_CENTER_PW_VAL          ((((F_CPU/1000) * RC_SERVO_CENTER_PW )/1000)/TIMER0_PRESCALER) 
+#define RC_SERVO_CENTER_PW_VAL          ((((F_CPU/1000) * RC_SERVO_CENTER_PW )/1000)/TIMER0_PRESCALER)
 #define RC_SERVO_MIN_PW_VAL             ((((F_CPU/1000) * RC_SERVO_MIN_PW)/1000)/TIMER0_PRESCALER)
 #define RC_SERVO_MAX_PW_VAL             ((((F_CPU/1000) * RC_SERVO_MAX_PW)/1000)/TIMER0_PRESCALER)
 
@@ -190,8 +190,8 @@ a different avr type cpu having at least 2k bytes of flash memory.
 #define RC_MAX_PULSE_TIMEOUT_HI_8_VAL   ((((((F_CPU/1000) * RC_SERVO_MAX_PW)/1000)/TIMER0_PRESCALER)/256)+1)
 #define RC_MIN_PULSE_TIMEOUT_HI_8_VAL   ((((((F_CPU/1000) * RC_SERVO_MIN_PW)/1000)/TIMER0_PRESCALER)/256)+1)
 
-#define RC_PPM_FRAME_TIMER_VAL          ((((F_CPU/1000) * RC_PPM_FRAME_LENGTH_MS)/1000)/TIMER1_PRESCALER) 
-#define RC_PPM_SYNC_PW_VAL              ((((F_CPU/1000) * RC_PPM_CHANNEL_SYNC_PW)/1000)/TIMER1_PRESCALER) 
+#define RC_PPM_FRAME_TIMER_VAL          ((((F_CPU/1000) * RC_PPM_FRAME_LENGTH_MS)/1000)/TIMER1_PRESCALER)
+#define RC_PPM_SYNC_PW_VAL              ((((F_CPU/1000) * RC_PPM_CHANNEL_SYNC_PW)/1000)/TIMER1_PRESCALER)
 
 #define RC_FS_CH_1_TIMER_VAL            ((((F_CPU/1000) * RC_FAILSAFE_CHANNEL_1)/1000)/TIMER1_PRESCALER)
 #define RC_FS_CH_2_TIMER_VAL            ((((F_CPU/1000) * RC_FAILSAFE_CHANNEL_2)/1000)/TIMER1_PRESCALER)
@@ -201,13 +201,13 @@ a different avr type cpu having at least 2k bytes of flash memory.
 #define RC_FS_CH_6_TIMER_VAL            ((((F_CPU/1000) * RC_FAILSAFE_CHANNEL_6)/1000)/TIMER1_PRESCALER)
 #define RC_FS_CH_7_TIMER_VAL            ((((F_CPU/1000) * RC_FAILSAFE_CHANNEL_7)/1000)/TIMER1_PRESCALER)
 #define RC_FS_CH_8_TIMER_VAL            ((((F_CPU/1000) * RC_FAILSAFE_CHANNEL_8)/1000)/TIMER1_PRESCALER)
-#define RC_RESET_PW_TIMER_VAL           ((((F_CPU/1000) * RC_PPM_RESET_PW)/1000)/TIMER1_PRESCALER) 
+#define RC_RESET_PW_TIMER_VAL           ((((F_CPU/1000) * RC_PPM_RESET_PW)/1000)/TIMER1_PRESCALER)
 
 #if F_CPU <= 8000000UL
 #define  RC_NUMBER_OF_SAMPLES           6
 #else
 #define  RC_NUMBER_OF_SAMPLES           4
-#endif 
+#endif
 
 
 //#define RC_TIMER0_VAL_CORRECTION        ((RC_SERVO_CENTER_PW_VAL *100)/RC_SERVO_CENTER_PW )
@@ -220,37 +220,37 @@ a different avr type cpu having at least 2k bytes of flash memory.
 
 //It is used when there is no servo signals received so the elapsed time is always RC_MAX_TIMEOUT ms.
 //In case the watchdog timer is used then the elapsed time is always the wdt timeout.
-#define RC_LED_FREQUENCY_VAL_4HZ	(((1000000/4)/25000)/2) 
+#define RC_LED_FREQUENCY_VAL_4HZ	(((1000000/4)/25000)/2)
 #if F_CPU <= 8000000UL
-#define RC_LED_FREQUENCY_VAL_1HZ	(((1000000/1)/60000)/2) 
+#define RC_LED_FREQUENCY_VAL_1HZ	(((1000000/1)/60000)/2)
 #else
-#define RC_LED_FREQUENCY_VAL_1HZ	(((1000000/1)/30000)/2) 
-#endif 
+#define RC_LED_FREQUENCY_VAL_1HZ	(((1000000/1)/30000)/2)
+#endif
 
 
 
 /* Macro command definitions. */
 #define LED_ON()                        { RC_LED_PORT_OUT_REG |= (1<<RC_LED_PIN); }
 #define LED_OFF()                       { RC_LED_PORT_OUT_REG &= (~(1<<RC_LED_PIN)); }
-#define TOGGLE_LED()                    { RC_LED_PORT_OUT_REG ^= (1<<RC_LED_PIN); } 
+#define TOGGLE_LED()                    { RC_LED_PORT_OUT_REG ^= (1<<RC_LED_PIN); }
 
-#define STOP_TIMER0()                   { RC_TIMER0_PRESCALER_REG = 0; } 
+#define STOP_TIMER0()                   { RC_TIMER0_PRESCALER_REG = 0; }
 #define START_TIMER0()                  { RC_TIMER0_PRESCALER_REG = TIMER0_PRESCALER_BITS; }
 #define RESET_TIMER0()                  { RC_TIMER0_TIFR |= (1<<TOV1); TCNT0=0; timer0_h8=0; timer0_h8_buf=0; }
-#define RESET_START_TIMER0()            { STOP_TIMER0(); RESET_TIMER0(); START_TIMER0(); }  
+#define RESET_START_TIMER0()            { STOP_TIMER0(); RESET_TIMER0(); START_TIMER0(); }
 
 #if RC_USE_FAILSAFE > 1
 #error RC_USE_FAILSAFE can be 0 or 1
-#endif 
+#endif
 #if RC_PPM_OUTPUT_TYPE > 1
 #error RC_PPM_OUTPUT_TYPE can be 0 or 1
-#endif 
+#endif
 #if RC_CONSTANT_PPM_FRAME_TIME > 1
 #error RC_CONSTANT_PPM_FRAME_TIME can be 0 or 1
-#endif          
+#endif
 #if RC_REDUCE_LATENCY > 2
 #error RC_REDUCE_LATENCY can be 0, 1 or 2
-#endif 
+#endif
 
 
 /********************************************************************************************************/
@@ -301,12 +301,12 @@ register volatile unsigned int   isr_time_stamp asm("r4");
 register volatile unsigned char  pin_interrupt_detected asm("r6");
 register volatile unsigned char  sreg_save asm("r7");
 register volatile unsigned char  isr_channel_number asm("r8");
-register volatile unsigned char  channel_mask_buffer asm("r9"); 
+register volatile unsigned char  channel_mask_buffer asm("r9");
 register volatile unsigned char  pin_reg_buffer0 asm("r10");
 register volatile unsigned char  pin_reg_buffer1 asm("r11");
 
 #else
-#warning GCC versions greater than 4.2.x have optimization problems with register variables. 
+#warning GCC versions greater than 4.2.x have optimization problems with register variables.
 #warning No register variables are used.
 
 volatile unsigned char  timer0_l8 = 0 ;
@@ -315,7 +315,7 @@ volatile unsigned int   isr_time_stamp = 0;
 volatile unsigned char  pin_interrupt_detected = 0;
 volatile unsigned char  isr_channel_number = 0;
 //volatile unsigned char  isr_pin_reg_buf = 0;
-volatile unsigned char  channel_mask_buffer = 0; 
+volatile unsigned char  channel_mask_buffer = 0;
 
 #endif
 
@@ -340,13 +340,13 @@ unsigned int dummy_int[10] __attribute__((section(".eeprom")))= { 1, 1 ,1, 1, 1,
 unsigned int EEMEM ppm_off_threshold_e[11] = { RC_PPM_OFF_THRESHOLD_VAL, RC_PPM_OFF_THRESHOLD_VAL, RC_PPM_OFF_THRESHOLD_VAL,
                                                RC_PPM_OFF_THRESHOLD_VAL, RC_PPM_OFF_THRESHOLD_VAL, RC_PPM_OFF_THRESHOLD_VAL,
                                                RC_PPM_OFF_THRESHOLD_VAL, RC_PPM_OFF_THRESHOLD_VAL, RC_PPM_OFF_THRESHOLD_VAL,
-                                               RC_PPM_OFF_THRESHOLD_VAL, RC_PPM_OFF_THRESHOLD_VAL  
+                                               RC_PPM_OFF_THRESHOLD_VAL, RC_PPM_OFF_THRESHOLD_VAL
                                              };
 
 unsigned char  EEMEM rc_lost_channel_e[11] = { RC_LOST_CHANNEL-1, RC_LOST_CHANNEL-1, RC_LOST_CHANNEL-1,
                                                RC_LOST_CHANNEL-1, RC_LOST_CHANNEL-1, RC_LOST_CHANNEL-1,
                                                RC_LOST_CHANNEL-1, RC_LOST_CHANNEL-1, RC_LOST_CHANNEL-1,
-                                               RC_LOST_CHANNEL-1, RC_LOST_CHANNEL-1  
+                                               RC_LOST_CHANNEL-1, RC_LOST_CHANNEL-1
                                              };
 //unsigned int EEMEM ch_failsafe_pw_e[RC_PPM_GEN_CHANNELS];
 const char              version_info[]="Servo2ppm V4.30";
@@ -370,7 +370,7 @@ CLKPR = 0;
 
 
 STOP_TIMER0();
-RESET_TIMER0(); 
+RESET_TIMER0();
 
 /* Enable pwm mode 15 (fast pwm with top=OCR1A) and stop the timer. */
 /* The timer compare module must be configured before the DDR register. */
@@ -407,7 +407,7 @@ RC_SERVO_PORT_OUT_REG = 0xFF;
 isr_channel_number = RC_PPM_GEN_CHANNELS;
 rc_lost_channel = (RC_LOST_CHANNEL-1);
 ppm_off_threshold = RC_PPM_OFF_THRESHOLD_VAL;
-// VERSION CONTROL 
+// VERSION CONTROL
 x=0;
 eep_address = (E2END - (sizeof(version_info)-1));
 while(version_info[x])
@@ -419,7 +419,7 @@ while(version_info[x])
        eep_address++;
        x++;
     }
-eeprom_write_byte((unsigned char*)E2END, '\0');   //Terminate the version control string. 
+eeprom_write_byte((unsigned char*)E2END, '\0');   //Terminate the version control string.
 
 asm("sei");
 
@@ -430,7 +430,7 @@ for(x=0; x<5; x++)
   {
     wdt_reset();
     RESET_TIMER0();
-    while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; } 
+    while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; }
   }
 x = 0;
 STOP_TIMER0();
@@ -451,7 +451,7 @@ return;
 /*11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111*/
 /*22222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222*/
 /*
-This function waits untill the receiver has been powered up and running so we can then detect 
+This function waits untill the receiver has been powered up and running so we can then detect
 the connected channels with certainty.
 */
 #if defined(RC_RX_READY_CHANNEL) && RC_RX_READY_CHANNEL > 0
@@ -467,7 +467,7 @@ RESET_START_TIMER0();
 servo_connected = 0;
 do{
 
-        wdt_reset(); 
+        wdt_reset();
         RESET_TIMER0();
         x=0;
         while(timer0_h8_buf <= RC_MAX_TIMEOUT_HI_8_VAL )
@@ -476,7 +476,7 @@ do{
               if( (RC_SERVO_PORT_PIN_REG & (1<<(RC_RX_READY_CHANNEL-1))) ) { x=timer0_h8_buf; }
               if( (timer0_h8_buf - x) >= RC_MAX_PULSE_TIMEOUT_HI_8_VAL ){ servo_connected = 1; break; }
             }
- 
+
   }while(servo_connected < 1);
 
 //Now test the found channel for a proper servo pulse.
@@ -505,18 +505,18 @@ RESET_START_TIMER0();
 do{
     for(channel=0; channel < RC_SERVO_INPUT_CHANNELS; channel++)
       {
-        wdt_reset(); 
+        wdt_reset();
         RESET_TIMER0();
         servo_connected = 0;
         x=0;
         while(timer0_h8_buf <= RC_MAX_TIMEOUT_HI_8_VAL )
             {
-               timer0_h8_buf = timer0_h8; 
+               timer0_h8_buf = timer0_h8;
                if(RC_SERVO_PORT_PIN_REG & (1<<channel)) { x=timer0_h8_buf; }
                if( (timer0_h8_buf - x) >= RC_MAX_PULSE_TIMEOUT_HI_8_VAL ){ servo_connected = 1; break; }
             }
-        if(servo_connected >= 1){ break; } 
-      } 
+        if(servo_connected >= 1){ break; }
+      }
 
   }while(servo_connected < 1);
 
@@ -548,11 +548,11 @@ unsigned int pw = 0;
 #endif
 
 
-/* 
+/*
 There must be no error in which channels are connected to the encoder
 because this will have devastating effects later on.
 */
-wdt_reset(); 
+wdt_reset();
 RESET_START_TIMER0();
 
       for(channel=0; channel < RC_SERVO_INPUT_CHANNELS; channel++)
@@ -560,7 +560,7 @@ RESET_START_TIMER0();
            servo_connected = 0;
            for(y=0; y<5; y++)
              {
-                wdt_reset(); 
+                wdt_reset();
                 RESET_TIMER0();
                 x=0;
                 while(timer0_h8_buf <= RC_MAX_TIMEOUT_HI_8_VAL )
@@ -569,16 +569,16 @@ RESET_START_TIMER0();
                        if(RC_SERVO_PORT_PIN_REG & (1<<channel)) { x=timer0_h8_buf; }
                        if( (timer0_h8_buf - x) >= RC_MAX_PULSE_TIMEOUT_HI_8_VAL ){ servo_connected++; break; }
                     }
-                if(servo_connected >= 3){ channel_mask |= (1<<channel); connected_channels++; break; } 
+                if(servo_connected >= 3){ channel_mask |= (1<<channel); connected_channels++; break; }
              }
-        } 
+        }
 #if defined(RC_RX_READY_CHANNEL) && RC_RX_READY_CHANNEL > 0
 
 connected_channels = 0;
 for(channel=0; channel < RC_SERVO_INPUT_CHANNELS; channel++)
   {
     if(channel_mask & (1<<channel) )
-     { 
+     {
         pw=get_channel_pw(channel);
         if(pw < RC_SERVO_MIN_PW_VAL || pw > RC_SERVO_MAX_PW_VAL)
          {
@@ -601,13 +601,13 @@ void write_default_values_to_eeprom(void)
 unsigned char x = 0;
 
 for(x=0; x<(sizeof(ppm_off_threshold_e)/sizeof(int)); x++)
-  { 
+  {
      eeprom_write_word(&ppm_off_threshold_e[x], RC_PPM_OFF_THRESHOLD_VAL);
   }
 for(x=0; x < (sizeof(rc_lost_channel_e)/sizeof(char)); x++)
-  { 
+  {
      eeprom_write_byte(&rc_lost_channel_e[x], (RC_LOST_CHANNEL - 1));
-  }  
+  }
 rc_lost_channel = (RC_LOST_CHANNEL - 1);
 ppm_off_threshold = RC_PPM_OFF_THRESHOLD_VAL;
 
@@ -621,7 +621,7 @@ return;
 All this code because the Eeprom is prone to data corruption in noisy environments.
 11 copies of each variable are read and if more than 50% + 1 values are the same and within limits
 this value is taken to be valid.
-If not all 11 values are the same then the array is written again with this 50% +1 value. 
+If not all 11 values are the same then the array is written again with this 50% +1 value.
 */
 void load_values_from_eeprom(void)
 {
@@ -637,20 +637,20 @@ wdt_reset();
 
 /****************************************************************************************************/
 /*                 READ WHICH CHANNEL WILL BE USED AS A RX LOST INDICATOR                           */
-/****************************************************************************************************/ 
+/****************************************************************************************************/
 match_upper_limit = (sizeof(rc_lost_channel_e)/sizeof(char));
 match_lower_limit = (((sizeof(rc_lost_channel_e)/sizeof(char))/2)+1);
 
 for(x=0; x<match_upper_limit; x++)
   {
     match = 0;
-    eeprom_buf_x = eeprom_read_byte(&rc_lost_channel_e[x]); 
+    eeprom_buf_x = eeprom_read_byte(&rc_lost_channel_e[x]);
     for(y=0; y<match_upper_limit; y++)
       {
          eeprom_buf_y = eeprom_read_byte(&rc_lost_channel_e[y]);
          if(eeprom_buf_y == eeprom_buf_x){ match++; }
       }
-    // If 50% +1 or more char values in the array are the same a match has been found. 
+    // If 50% +1 or more char values in the array are the same a match has been found.
     // Now test them to see if they are within limits.
     if(match >= match_lower_limit )
      {
@@ -661,7 +661,7 @@ for(x=0; x<match_upper_limit; x++)
             {
                for(x=0; x<match_upper_limit; x++)
                  {
-                    eeprom_write_byte(&rc_lost_channel_e[x], eeprom_buf_x); 
+                    eeprom_write_byte(&rc_lost_channel_e[x], eeprom_buf_x);
                  }
             }
 
@@ -674,20 +674,20 @@ if( match < match_lower_limit ){ write_default_values_to_eeprom();  return; }
 
 /****************************************************************************************************/
 /*             NOW READ THE CHANNEL'S PULSE WIDTH SO IT CAN BE USED AS A TRIGGER                    */
-/****************************************************************************************************/ 
+/****************************************************************************************************/
 match_upper_limit = (sizeof(ppm_off_threshold_e)/sizeof(int));
 match_lower_limit = (((sizeof(ppm_off_threshold_e)/sizeof(int))/2)+1);
 
 for(x=0; x < match_upper_limit; x++)
   {
     match = 0;
-    eeprom_buf_x = eeprom_read_word(&ppm_off_threshold_e[x]); 
+    eeprom_buf_x = eeprom_read_word(&ppm_off_threshold_e[x]);
     for(y=0; y < match_upper_limit; y++)
       {
          eeprom_buf_y = eeprom_read_word(&ppm_off_threshold_e[y]);
          if(eeprom_buf_y == eeprom_buf_x){ match++; }
       }
-    // If 50% +1 or more integer values in the array are the same a match has been found. 
+    // If 50% +1 or more integer values in the array are the same a match has been found.
     // Now test them to see if they are within limits.
     if(match >= match_lower_limit )
      {
@@ -698,7 +698,7 @@ for(x=0; x < match_upper_limit; x++)
              {
                for(x=0; x < match_upper_limit; x++){ eeprom_write_word(&ppm_off_threshold_e[x], eeprom_buf_x); }
              }
-        
+
           }else if( (eeprom_buf_x <= RC_PPM_OFF_LOWER_WINDOW_VAL) && (eeprom_buf_x >= RC_SERVO_MIN_PW_VAL) )
                  {
                     ppm_off_threshold = eeprom_buf_x; //Load the stored value to throttle_thershold.
@@ -728,17 +728,17 @@ unsigned int  pw = 0;
 unsigned char pw_measurement_started = 0;
 
 wdt_reset();
-/* The servo input pins are already configured as inputs with pullup resistors. */ 
-// First we must disable the pin interrupt. 
+/* The servo input pins are already configured as inputs with pullup resistors. */
+// First we must disable the pin interrupt.
 RC_PIN_INT_EN_REG &= (~(1<<RC_PIN_INT_EN_BIT));
 //Now we must load the pin interrupt mask register.
 RC_PIN_INT_MASK_REG = (1<<pin);
-//Clear any pin interrupt flag set. 
+//Clear any pin interrupt flag set.
 RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
 // Clear the pin interrupt ISR detection variable
 pin_interrupt_detected = 0;
-//Now we can enable the pin interrupt again. 
-RC_PIN_INT_EN_REG |= (1<<RC_PIN_INT_EN_BIT); 
+//Now we can enable the pin interrupt again.
+RC_PIN_INT_EN_REG |= (1<<RC_PIN_INT_EN_BIT);
 // Set and start timer1
 RESET_START_TIMER0();
 //Turn off any pending pin interrupt
@@ -746,20 +746,20 @@ RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
 // clear the pin interrupt flag.
 pin_interrupt_detected = 0;
 while(1)
-    {  
+    {
        /* Wait until the pin change state. */
-       do{  
+       do{
             timer0_h8_buf = timer0_h8;
             if( timer0_h8_buf >=  RC_MAX_TIMEOUT_HI_8_VAL ) { return(0);  }
-                 
+
          }while( pin_interrupt_detected == 0 );
-         pin_interrupt_detected = 0; 
-         if( RC_SERVO_PORT_PIN_REG & (1<<pin) ) /* if the pin is high then give it a time stamp */ 
+         pin_interrupt_detected = 0;
+         if( RC_SERVO_PORT_PIN_REG & (1<<pin) ) /* if the pin is high then give it a time stamp */
           {
              pw = isr_time_stamp;
              pw_measurement_started = 1;        /* signal that this channel got it's timer stamp.*/
-                                       
-          }else{ 
+
+          }else{
                   // If the pin is low and it already has a time stamp then we are done.
                   if( pw_measurement_started )
                    {
@@ -767,13 +767,13 @@ while(1)
                       break;
                    }
                }
-    }  
+    }
 
 /*Stop the timer */
-STOP_TIMER0(); 
+STOP_TIMER0();
 RESET_TIMER0();
-   
-return((unsigned int)pw);   
+
+return((unsigned int)pw);
 }
 
 /*66666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666*/
@@ -789,7 +789,7 @@ unsigned char x = 0;
 unsigned char y = 0;
 
 
-//We have to make sure that the setup mode is requested.  
+//We have to make sure that the setup mode is requested.
 wdt_reset();
 x=0;
 y=0;
@@ -799,7 +799,7 @@ do{
     timer0_h8_buf = timer0_h8;
     if( (RC_SETUP_PIN_REG & (1<<RC_SETUP_PIN)) == 0){ x++; }else{ x=0; }
       {
-         if(timer0_h8_buf > RC_MAX_TIMEOUT_HI_8_VAL ){setup_mode = 0; break; } 
+         if(timer0_h8_buf > RC_MAX_TIMEOUT_HI_8_VAL ){setup_mode = 0; break; }
       }
 
   }while(x < 100);
@@ -814,26 +814,26 @@ if(setup_mode)
      if(channels_in_use > 1 )
       {
          if( channel_mask & (1<<(RC_LOST_CHANNEL - 1)) )
-          { 
-             rc_lost_channel = (RC_LOST_CHANNEL - 1); 
+          {
+             rc_lost_channel = (RC_LOST_CHANNEL - 1);
              for(x=0; x < (sizeof(rc_lost_channel_e)/sizeof(char)); x++)
-               { 
+               {
                   eeprom_write_byte(&rc_lost_channel_e[x], rc_lost_channel);
-               } 
+               }
              success += 1;
           }
- 
+
       }else if(channels_in_use == 1)
              {
                for(x=0; x < RC_SERVO_INPUT_CHANNELS; x++)
                  {
                    if(channel_mask & (1<<x))
-                    { 
+                    {
                        rc_lost_channel = x;
                        for(x=0; x < (sizeof(rc_lost_channel_e)/sizeof(char)); x++)
-                         { 
+                         {
                             eeprom_write_byte(&rc_lost_channel_e[x], rc_lost_channel);
-                         } 
+                         }
                        success += 1;
                        break;
                     }
@@ -855,7 +855,7 @@ if(setup_mode)
               if(pw >= RC_SERVO_MIN_PW_VAL && pw <= RC_SERVO_MAX_PW_VAL)
                {
                   pw_buffer += pw;
-                  y++;        
+                  y++;
                }
            }
          pw_buffer /= y;
@@ -863,37 +863,37 @@ if(setup_mode)
          if( (pw_buffer >= RC_PPM_OFF_UPPER_WINDOW_VAL) && (pw_buffer <= RC_SERVO_MAX_PW_VAL) )
           {
              for(x=0; x<(sizeof(ppm_off_threshold_e)/sizeof(int)); x++)
-               { 
+               {
                  eeprom_write_word(&ppm_off_threshold_e[x], (pw_buffer+RC_PPM_OFF_OFFSET_VAL));
-               } 
+               }
              success += 1;
 
          }else if( (pw_buffer <= RC_PPM_OFF_LOWER_WINDOW_VAL) && (pw_buffer >= RC_SERVO_MIN_PW_VAL) )
                 {
                    for(x=0; x<(sizeof(ppm_off_threshold_e)/sizeof(int)); x++)
-                     { 
+                     {
                        eeprom_write_word(&ppm_off_threshold_e[x], (pw_buffer-RC_PPM_OFF_OFFSET_VAL));
-                     } 
+                     }
                    success += 1;
                 }
 
       }
-           
+
 /****************************************************************************************************/
 /*            LASTLY WE MUST INDICATE TO THE USER IF THE SETUP PROCEDURE WAS SUCCESSFUL             */
-/****************************************************************************************************/     
+/****************************************************************************************************/
      if(success == 2)
-      { 
+      {
         RC_SETUP_PORT_OUT_REG &= (~(1<<RC_SETUP_PIN));
         while(1)
             {
-              LED_ON(); 
+              LED_ON();
               for(x=0; x<3; x++)
                  {
                    wdt_reset();
                    RESET_START_TIMER0();
                    /* delay ~30 ms * 3  = 100 milliseconds */
-                   while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; } 
+                   while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; }
                  }
                LED_OFF();
                for(x=0; x<30; x++)
@@ -901,21 +901,21 @@ if(setup_mode)
                    wdt_reset();
                    RESET_START_TIMER0();
                    /* delay ~30 ms * 30  = 900 milliseconds */
-                   while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; }  
+                   while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; }
                  }
             }
 
-      }else{ 
+      }else{
               write_default_values_to_eeprom();
               while(1)
                   {
-                     LED_ON(); 
+                     LED_ON();
                      for(x=0; x<30; x++)
                        {
                          wdt_reset();
                          RESET_START_TIMER0();
                          /* delay ~30 ms * 30  = 900 milliseconds */
-                         while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; }  
+                         while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; }
                        }
                      LED_OFF();
                      for(x=0; x<3; x++)
@@ -923,7 +923,7 @@ if(setup_mode)
                           wdt_reset();
                           RESET_START_TIMER0();
                           /* delay ~30 ms * 3  = 100 milliseconds */
-                          while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; }  
+                          while(timer0_h8_buf < RC_MAX_TIMEOUT_HI_8_VAL ){ timer0_h8_buf = timer0_h8; }
                        }
                   }
            }
@@ -968,7 +968,7 @@ isr_channel_pw[RC_PPM_GEN_CHANNELS] = RC_RESET_PW_TIMER_VAL;
 
 
 return;
-} 
+}
 /*
 void load_failsafe_values(void)
 {
@@ -985,7 +985,7 @@ isr_channel_pw[RC_PPM_GEN_CHANNELS] = RC_RESET_PW_TIMER_VAL;
 
 return;
 
-} 
+}
 */
 
 /*88888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888*/
@@ -994,12 +994,12 @@ return;
 static inline void ppm_on(void)
 {
 
-   RC_TIMER1_PRESCALER_REG  &= (~(TIMER1_PRESCALER_BITS));	
-   TCNT1 = 0; 
-   isr_channel_number = RC_PPM_GEN_CHANNELS;		
+   RC_TIMER1_PRESCALER_REG  &= (~(TIMER1_PRESCALER_BITS));
+   TCNT1 = 0;
+   isr_channel_number = RC_PPM_GEN_CHANNELS;
    RC_TIMER1_COMP1_REG = RC_RESET_PW_TIMER_VAL;
-   RC_TIMER1_COMP2_REG = RC_PPM_SYNC_PW_VAL;	
-   RC_TIMER1_TIFR |= ( (1<<OCIE1B)|(1<<TOV1) );			
+   RC_TIMER1_COMP2_REG = RC_PPM_SYNC_PW_VAL;
+   RC_TIMER1_TIFR |= ( (1<<OCIE1B)|(1<<TOV1) );
    RC_TIMER1_PRESCALER_REG |= TIMER1_PRESCALER_BITS;
 //   ppm_status = 1;
 
@@ -1014,9 +1014,9 @@ static inline void ppm_off(void)
    if(RC_TIMER1_PRESCALER_REG & TIMER1_PRESCALER_BITS)
     {
       while( TCNT1 <= (RC_PPM_SYNC_PW_VAL+(RC_PPM_SYNC_PW_VAL / 10)) );
-    } 
-   RC_TIMER1_PRESCALER_REG &= (~(TIMER1_PRESCALER_BITS));   
-   RC_TIMER1_TIFR |= ( (1<<OCIE1B)|(1<<TOV1) ); 
+    }
+   RC_TIMER1_PRESCALER_REG &= (~(TIMER1_PRESCALER_BITS));
+   RC_TIMER1_TIFR |= ( (1<<OCIE1B)|(1<<TOV1) );
 //   ppm_status = 0;
 
 return;
@@ -1075,7 +1075,7 @@ void get_pw_of_connected_channels(unsigned char reset)
     {
       pw_change[x] = 0;
     }
-    RESET_START_TIMER0(); 
+    RESET_START_TIMER0();
     pin_reg_buffer1 = RC_SERVO_PORT_PIN_REG & channel_mask;
     RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
     pin_interrupt_detected = 0;
@@ -1085,15 +1085,15 @@ void get_pw_of_connected_channels(unsigned char reset)
   channel_status = 0;
   /* This is the main pulse measuring loop. It makes sure that only complete servo pulses are measured. */
   while(channel_mask_buffer)
-  { 
+  {
     x=0;
     y=1;
     /* Wait until a pin change state. */
     while( pin_interrupt_detected == 0 );
     asm("cli");
     time_stamp = isr_time_stamp;
-    pin_interrupt_detected = 0; 
-    RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT); 
+    pin_interrupt_detected = 0;
+    RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
     pin_reg_buffer0 = RC_SERVO_PORT_PIN_REG;
     asm("sei");
     //Only the pins that changed state will be examined.
@@ -1105,7 +1105,7 @@ void get_pw_of_connected_channels(unsigned char reset)
       {
         if(channels_to_check & y)
         {
-          if( (pin_reg_buffer0 & y) ) /* if the pin is high then... */ 
+          if( (pin_reg_buffer0 & y) ) /* if the pin is high then... */
           {
             pw_of_channel[x] = time_stamp;
             channel_status |= y;
@@ -1113,38 +1113,38 @@ void get_pw_of_connected_channels(unsigned char reset)
           else
           {
             if(channel_status & y)
-            { 
+            {
               channel_mask_buffer &= (~y);
               pw_of_channel[x] = time_stamp - pw_of_channel[x];
             }
-          }   // End of "if( (pin_reg_buffer0 & y) )...else..." statement         
+          }   // End of "if( (pin_reg_buffer0 & y) )...else..." statement
         }	// End of "if(channels_to_check & y)" statement.
         x++;
         y=(y<<1);
       }   //End of while(x < RC_SERVO_INPUT_CHANNELS) loop.
-      pin_reg_buffer1 = pin_reg_buffer0; 
+      pin_reg_buffer1 = pin_reg_buffer0;
     }
   }	// End of "while(channel_mask_buffer)" loop.
   RESET_START_TIMER0();
   if (wdt_timeout){
-    WDTCSR |= (1<<WDIE); 
+    WDTCSR |= (1<<WDIE);
     wdt_reset();
-    wdt_timeout = 0; 
-    channel_mask_buffer = 0xFF; 
-  }  
+    wdt_timeout = 0;
+    channel_mask_buffer = 0xFF;
+  }
   /*------------------------------------------------------------------------------------------------------*/
   /*                              CHECK THE RX LOST INDICATOR CHANNEL                                     */
   /*------------------------------------------------------------------------------------------------------*/
 #if defined(RC_LOST_CHANNEL) && RC_LOST_CHANNEL > 0
   if( (channel_mask & (1<<rc_lost_channel)) )
-  { 
+  {
     if(channel_mask_buffer  == 0)
     {
       pw_buffer = pw_of_channel[rc_lost_channel];
       if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL)  )
-      { 
+      {
         if(ppm_off_threshold > RC_SERVO_CENTER_PW_VAL)
-        { 
+        {
           if(pw_buffer >= ppm_off_threshold)
           {
             channel_mask_buffer = 0xFF;
@@ -1172,9 +1172,9 @@ void get_pw_of_connected_channels(unsigned char reset)
     for(channel=0; channel < RC_SERVO_INPUT_CHANNELS; channel++)
     {
       if(channel_mask & (1<<channel))
-      {   
+      {
         if( (pw_of_channel[channel] > RC_SERVO_MIN_PW_VAL) && (pw_of_channel[channel] < RC_SERVO_MAX_PW_VAL)  )
-        { 
+        {
           pw_buffer = pw_of_channel[channel];
           x = 1;
           for(y=0; y<PPM_FILTER_WINDOW; y++)
@@ -1190,16 +1190,16 @@ void get_pw_of_connected_channels(unsigned char reset)
     //      isr_channel_pw[channel]= pw_buffer;
           // The number 10 represent timer ticks and not microseconds.
           if(pw_buffer >= (isr_channel_pw[channel]+10) || pw_buffer <= (isr_channel_pw[channel]-10))
-          { 
+          {
             isr_channel_pw[channel]= pw_buffer;
-            pw_change[channel] = 0;   
+            pw_change[channel] = 0;
           }
           else if(pw_of_channel[channel] > (isr_channel_pw[channel]+1))
           {
             if(pw_change[channel] < 0)
             {
               pw_change[channel] = 0;
-            } 
+            }
             if(pw_change[channel] >= RC_NUMBER_OF_SAMPLES) //CHANGED THIS TO MATCH THE NO FILTER VERSION, but that one isn't working?
             {
               isr_channel_pw[channel]= pw_buffer;
@@ -1207,14 +1207,14 @@ void get_pw_of_connected_channels(unsigned char reset)
             else
             {
               pw_change[channel]++;
-            } 
+            }
           }
           else if(pw_of_channel[channel] < (isr_channel_pw[channel]-1))
           {
             if(pw_change[channel] > 0)
             {
               pw_change[channel] = 0;
-            } 
+            }
             if(pw_change[channel] <= -(RC_NUMBER_OF_SAMPLES))
             {
               isr_channel_pw[channel]= pw_buffer;
@@ -1266,24 +1266,24 @@ void get_pw_of_connected_channels(unsigned char reset)
     {
       pw_change[x] = 0;
     }
-    RESET_START_TIMER0(); 
+    RESET_START_TIMER0();
     pin_reg_buffer1 = (RC_SERVO_PORT_PIN_REG & channel_mask);
     RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
-    pin_interrupt_detected = 0; 
+    pin_interrupt_detected = 0;
   }
   wdt_reset();
   channel_mask_buffer = channel_mask;
   channel_status = 0;
   while(channel_mask_buffer)
-  { 
+  {
     x=0;
     y=1;
     /* Wait until a pin change state. */
     while( pin_interrupt_detected == 0 );
     asm("cli");
     time_stamp = isr_time_stamp;
-    pin_interrupt_detected = 0; 
-    RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT); 
+    pin_interrupt_detected = 0;
+    RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
     pin_reg_buffer0 = RC_SERVO_PORT_PIN_REG;
     asm("sei");
     //Only the pins that changed state will be examined.
@@ -1295,10 +1295,10 @@ void get_pw_of_connected_channels(unsigned char reset)
       {
         if(channels_to_check & y)
         {
-          if( (pin_reg_buffer0 & y) )         // if the pin is high then...  
+          if( (pin_reg_buffer0 & y) )         // if the pin is high then...
           {
             pw_of_channel[x] = time_stamp;  //Store the time that the servo pulse started.
-            channel_status |= y;            //Signal that the servo pulse started. 
+            channel_status |= y;            //Signal that the servo pulse started.
           }
           else
           {
@@ -1308,12 +1308,12 @@ void get_pw_of_connected_channels(unsigned char reset)
               channel_mask_buffer &= (~y);
               pw_buffer = time_stamp - pw_of_channel[x];
               if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL) )
-              { 
+              {
 #if defined(RC_LOST_CHANNEL) && RC_LOST_CHANNEL > 0
                 if(x == rc_lost_channel)
                 {
                   if(ppm_off_threshold > RC_SERVO_CENTER_PW_VAL)
-                  { 
+                  {
                     if(pw_buffer >= ppm_off_threshold)
                     {
                       channel_mask_buffer = 0xFF;
@@ -1334,16 +1334,16 @@ void get_pw_of_connected_channels(unsigned char reset)
                 {
                   isr_pw_buffer = isr_channel_pw[channel];
                   if (pw_buffer >= (isr_pw_buffer+10) || pw_buffer <= (isr_pw_buffer-10))
-                  { 
+                  {
                     isr_channel_pw[channel]= pw_buffer;
-                    pw_change[channel] = 0;   
+                    pw_change[channel] = 0;
                   }
                   else if (pw_of_channel[channel] > (isr_pw_buffer+1))
                   {
                     if(pw_change[channel] < 0)
                     {
                       pw_change[channel] = 0;
-                    } 
+                    }
                     if (pw_change[channel] >= RC_NUMBER_OF_SAMPLES)
                     {
                       isr_channel_pw[channel]= pw_buffer;
@@ -1351,22 +1351,22 @@ void get_pw_of_connected_channels(unsigned char reset)
                     else
                     {
                       pw_change[channel]++;
-                    } 
+                    }
                   }
                   else if (pw_of_channel[channel] < (isr_pw_buffer-1))
                   {
                     if(pw_change[channel] > 0)
                     {
                       pw_change[channel] = 0;
-                    } 
+                    }
                     if (pw_change[channel] <= -(RC_NUMBER_OF_SAMPLES))
                     {
-                      isr_channel_pw[channel]= pw_buffer;          
+                      isr_channel_pw[channel]= pw_buffer;
                     }
                     else
                     {
                       pw_change[channel]--;
-                    } 
+                    }
 
                   }
                   else
@@ -1374,23 +1374,23 @@ void get_pw_of_connected_channels(unsigned char reset)
                     pw_change[channel] = 0;
                   }
                 }
-              } // End of "if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL) )" statement. 
+              } // End of "if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL) )" statement.
             } // End of "if(channel_status & y)" statement.
-          }   // End of "if( (pin_reg_buffer0 & y) )...else..." statement         
+          }   // End of "if( (pin_reg_buffer0 & y) )...else..." statement
         }	// End of "if(channels_to_check & y)" statement.
         x++;
         y=(y<<1);
       }   // End of "while(x<RC_SERVO_INPUT_CHANNELS)" loop.
     }
-    pin_reg_buffer1 = pin_reg_buffer0; 
+    pin_reg_buffer1 = pin_reg_buffer0;
   }// End of "while(channel_mask_buffer)" loop.
   RESET_START_TIMER0();
   if (wdt_timeout){
-     WDTCSR |= (1<<WDIE); 
+     WDTCSR |= (1<<WDIE);
      wdt_reset();
-     wdt_timeout = 0; 
-     channel_mask_buffer = 0xFF; 
-  } 
+     wdt_timeout = 0;
+     channel_mask_buffer = 0xFF;
+  }
 
   return;
 }
@@ -1413,16 +1413,16 @@ wdt_disable();
 wdt_enable(WDTO_500MS);
 wdt_reset();
 
-initialize_mcu(); 
+initialize_mcu();
 /*Load the values stored in the eeprom like the throttle channel threshold etc. */
-load_values_from_eeprom();  
+load_values_from_eeprom();
 //Load the ISR array. This way if a channel is not connected it will have the failsafe value.
-load_failsafe_values(); 
+load_failsafe_values();
 /*
 The "wait_for_rx(): function waits untill the receiver has been powered up and running
 so we can then detect the connected channels with certainty.
 */
-wait_for_rx(); 
+wait_for_rx();
 channels_in_use = detect_connected_channels();
 check_for_setup_mode();
 servo_signals_lost = 1;   //Signal that the servo signals have gone missing(no rx signal).
@@ -1434,21 +1434,21 @@ wdt_disable();
 wdt_enable(WDTO_60MS);
 #else
 wdt_enable(WDTO_30MS);
-#endif 
+#endif
 
 WDTCSR |= (1<<WDIE);
 wdt_reset();
 
-// Now we must disable the pin interrupt. 
+// Now we must disable the pin interrupt.
 RC_PIN_INT_EN_REG &= (~(1<<RC_PIN_INT_EN_BIT));
 //Now we must load the pin interrupt mask register.
 RC_PIN_INT_MASK_REG = channel_mask;
-//Clear any pin interrupt flag set. 
+//Clear any pin interrupt flag set.
 RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
 // Clear the pin interrupt ISR detection variable
 pin_interrupt_detected = 0;
-// Finally we can enable the pin interrupt again. 
-RC_PIN_INT_EN_REG |= (1<<RC_PIN_INT_EN_BIT); 
+// Finally we can enable the pin interrupt again.
+RC_PIN_INT_EN_REG |= (1<<RC_PIN_INT_EN_BIT);
 // Take a snapshot of the servo pins in order to establish a starting point.
 
 /*------------------------------------------------------------------------------------------------------*/
@@ -1457,22 +1457,22 @@ RC_PIN_INT_EN_REG |= (1<<RC_PIN_INT_EN_BIT);
 while(1)
     {
 
-       // Here we decide if a re synchronization with the input is needed. 
+       // Here we decide if a re synchronization with the input is needed.
        if(servo_signals_lost)
         {
            get_pw_of_connected_channels(1);
 
-        }else{ 
-                get_pw_of_connected_channels(0); 
+        }else{
+                get_pw_of_connected_channels(0);
              }
 
 /*------------------------------------------------------------------------------------------------------*/
        // Finally we can control when the PPM generator will be on and off.
-       led_counter++; 
-       if( led_counter >= led_frequency ){ led_counter = 0; TOGGLE_LED(); } 
+       led_counter++;
+       if( led_counter >= led_frequency ){ led_counter = 0; TOGGLE_LED(); }
        if( channel_mask_buffer == 0  ) //IF ALL CHANNELS HAVE BEEN MEASURED...
         {
-           tx_signal_lost = 0;         
+           tx_signal_lost = 0;
            if(servo_signals_lost) //IF PREVIOUSLY THE SERVO SIGNAL WAS LOST...
             {
               tx_signal_detected++;
@@ -1491,7 +1491,7 @@ while(1)
                {
 		   tx_signal_lost++;
                    if(tx_signal_lost > RC_MAX_BAD_PPM_FRAMES)
-                    { 
+                    {
                        servo_signals_lost = 1;
                        led_counter = 0;
                        led_frequency = RC_LED_FREQUENCY_VAL_1HZ;
@@ -1500,11 +1500,11 @@ while(1)
 #else
                        ppm_off();
 #endif
-                    } 
+                    }
                } //end of if(servo_signals_lost == 0) statement.
            } //end of if( x > (channels_in_use/2)  ){...}else{...} statement.
-    } //end of while(1) loop.      
-  
+    } //end of while(1) loop.
+
 }
 /********************************************************************************************************/
 /*                                   INTERRUPT SERVICE ROUTINES                                         */
@@ -1532,20 +1532,20 @@ ISR(TIMER0_OVF_vect, ISR_NAKED)
 __asm__ __volatile__(
 			"in	r7, __SREG__		\n\t"
 			"inc	r3			\n\t"
-			"sbis	59-0x20, 3		\n\t"    
-			"rjmp	.no_external_pin_int	\n\t"  
+			"sbis	59-0x20, 3		\n\t"
+			"rjmp	.no_external_pin_int	\n\t"
 	                "clr	r2			\n\t"
 #if F_CPU <= 8000000UL
 	                "inc	r2			\n\t"
 #endif
 			"movw	r4,r2			\n\t"
-     			"mov	r6, r3			\n\t" 
-        	        "sbi	59-0x20, 3		\n\t"   
+     			"mov	r6, r3			\n\t"
+        	        "sbi	59-0x20, 3		\n\t"
 		        ".no_external_pin_int:		\n\t"
 			"out	__SREG__, r7		\n\t"
 			"reti				\n\t"
 
-                    ::); 
+                    ::);
 /*
 // C EQUIVALENT CODE
 sreg_save = SREG;
@@ -1559,18 +1559,18 @@ if( (RC_PIN_INT_FLAG_REG & (1<<RC_PIN_INT_FLAG_BIT)) )
  }
 SREG = sreg_save;
 */
-}  
+}
 
 /********************************************************************************************************/
 
 ISR(PCINT2_vect, ISR_NAKED)
 {
 __asm__ __volatile__(
-	                "in	r2, 70-0x20		\n\t"	
+	                "in	r2, 70-0x20		\n\t"
                         "in	r7,  __SREG__		\n\t"
 	                "sbis	53-0x20, 0	     	\n\t"
  	                "rjmp	.no_timer0_ovf		\n\t"
-	                "clr	r2			\n\t"	
+	                "clr	r2			\n\t"
                         "inc	r3          		\n\t"
                         "sbi	53-0x20, 0   		\n\t"
                          ".no_timer0_ovf: 		\n\t"
@@ -1578,7 +1578,7 @@ __asm__ __volatile__(
                         "clr	r6          		\n\t"
                 	"inc	r6			\n\t"
                 	"out	__SREG__, r7		\n\t"
-                 	"reti                 		\n\t" 
+                 	"reti                 		\n\t"
 	          ::);
 /*
 // C EQUIVALENT CODE
@@ -1599,7 +1599,7 @@ SREG = sreg_save;
 
 }
 
-#else 
+#else
 
 //For GCC versions greater then 4.2.x global register variables get trashed during optimization
 //so i need to use normal ram variables instead. i don't use any register variables here.
@@ -1608,29 +1608,29 @@ ISR(TIMER0_OVF_vect, ISR_NAKED)
 /*
 In order to make the	ISR as fast and accurate it can be, i am forced to use more code but the execution is faster.
 It would be nice to have an extra 16 bit timer but i don't, so i am forced to use tricks with an 8 bit timer.
-*/ 
+*/
 __asm__ __volatile__(
-			"sbic	59-0x20, 3			\n\t"    
-			"rjmp	.external_pin_int0		\n\t"  
+			"sbic	59-0x20, 3			\n\t"
+			"rjmp	.external_pin_int0		\n\t"
 			"push	r2				\n\t"
 			"push	r3				\n\t"
 			"in	r3, __SREG__			\n\t"
 			"lds	r2, timer0_h8			\n\t"
 			"inc	r2				\n\t"
-     			"sts	timer0_h8, r2			\n\t"  
+     			"sts	timer0_h8, r2			\n\t"
 			"out	__SREG__, r3			\n\t"
 			"pop	r3				\n\t"
 			"pop	r2				\n\t"
-			"sbis	59-0x20, 3			\n\t"    
+			"sbis	59-0x20, 3			\n\t"
 			"rjmp	.no_external_pin_int		\n\t"
 			"push	r24				\n\t"
 			"lds	r24, timer0_h8			\n\t"
 			"sts	(isr_time_stamp)+1, r24		\n\t"
-         		"ldi	r24, 1				\n\t" 
+         		"ldi	r24, 1				\n\t"
 			"sts	isr_time_stamp, r24		\n\t"
-     			"sts	pin_interrupt_detected, r24	\n\t" 
-        	        "sbi	59-0x20, 3			\n\t" 
-			"pop	r24				\n\t"           
+     			"sts	pin_interrupt_detected, r24	\n\t"
+        	        "sbi	59-0x20, 3			\n\t"
+			"pop	r24				\n\t"
 			".no_external_pin_int:			\n\t"
 			"reti					\n\t"
 
@@ -1642,17 +1642,17 @@ __asm__ __volatile__(
 			"inc	r2				\n\t"
      			"sts	timer0_h8, r2			\n\t"
 			"sts	(isr_time_stamp)+1, r2		\n\t"
-         		"clr	r2				\n\t" 
+         		"clr	r2				\n\t"
 			"sts	isr_time_stamp, r2		\n\t"
-         		"inc	r2				\n\t" 
-     			"sts	pin_interrupt_detected, r2	\n\t" 
-        	        "sbi	59-0x20, 3			\n\t" 
+         		"inc	r2				\n\t"
+     			"sts	pin_interrupt_detected, r2	\n\t"
+        	        "sbi	59-0x20, 3			\n\t"
 			"out	__SREG__, r3			\n\t"
 			"pop	r3				\n\t"
 			"pop	r2				\n\t"
 			"reti					\n\t"
 
-                    ::); 
+                    ::);
 
 }
 
@@ -1668,7 +1668,7 @@ if( (RC_PIN_INT_FLAG_REG & (1<<RC_PIN_INT_FLAG_BIT)) )
  }
 
 return;
-}  
+}
 */
 /********************************************************************************************************/
 
@@ -1676,7 +1676,7 @@ ISR(PCINT2_vect, ISR_NAKED)
 {
 __asm__ __volatile__(
 			"push	r24				\n\t"
-	                "in	r24, 70-0x20			\n\t"	
+	                "in	r24, 70-0x20			\n\t"
 			"push	r2				\n\t"
 			"lds	r2, timer0_h8			\n\t"
 	                "sbis	53-0x20, 0	     		\n\t"
@@ -1686,8 +1686,8 @@ __asm__ __volatile__(
 			"inc	r2				\n\t"
      			"sts	timer0_h8, r2			\n\t"
 			"sts	(isr_time_stamp)+1, r2		\n\t"
-    			"sts	pin_interrupt_detected, r2	\n\t" 
-			"clr	r2				\n\t" 
+    			"sts	pin_interrupt_detected, r2	\n\t"
+			"clr	r2				\n\t"
 			"sts	isr_time_stamp, r2		\n\t"
                         "sbi	53-0x20, 0   			\n\t"
                 	"out	__SREG__, r3			\n\t"
@@ -1699,11 +1699,11 @@ __asm__ __volatile__(
                         ".no_timer0_ovf: 			\n\t"
 			"sts	isr_time_stamp, r24		\n\t"
 			"sts	(isr_time_stamp)+1, r2		\n\t"
-         		"ldi	r24, 1				\n\t" 
-     			"sts	pin_interrupt_detected, r24	\n\t"  
+         		"ldi	r24, 1				\n\t"
+     			"sts	pin_interrupt_detected, r24	\n\t"
 			"pop	r2				\n\t"
 			"pop	r24				\n\t"
-                 	"reti                 			\n\t" 
+                 	"reti                 			\n\t"
 	          ::);
 
 }
@@ -1749,7 +1749,7 @@ if(isr_channel_number < RC_PPM_GEN_CHANNELS)
 
  }else{
              RC_TIMER1_COMP1_REG = reset_pw;
-      } 
+      }
 
 #elif RC_CONSTANT_PPM_FRAME_TIME == 0
 
@@ -1765,13 +1765,13 @@ return;
 /********************************************************************************************************/
 
 ISR(WDT_vect)
-{                       
+{
 wdt_timeout = 1;
 pin_interrupt_detected = 1;
 channel_mask_buffer = 0;
 
 return;
-}  
+}
 
 
 

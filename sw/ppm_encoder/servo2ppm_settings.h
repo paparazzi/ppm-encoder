@@ -14,9 +14,9 @@
 #define SERVO2PPM_SETTINGS_H
 
 /********************************************************************************************************/
-/*                                  USER CONFIGURATION BLOCK START                                      */ 
+/*                                  USER CONFIGURATION BLOCK START                                      */
 /********************************************************************************************************/
-/* 
+/*
 The cpu frequency is defined in the makefile, the below definition is used only if the cpu frequency
 is not defined in the makefile.
 */
@@ -28,19 +28,19 @@ is not defined in the makefile.
 Those values are the failsafe servo values and the values for the non used channels
 If for example you leave unconnected channel 7, the servo pulse of channel 7 in the PPM train
 will be the failsafe value set below as "RC_FAILSAFE_CHANNEL_7" thus 1000 microseconds.
-*/ 
+*/
 
 #define RC_FAILSAFE_CHANNEL_1         1500UL
 #define RC_FAILSAFE_CHANNEL_2         1500UL
-#define RC_FAILSAFE_CHANNEL_3         1000UL 
+#define RC_FAILSAFE_CHANNEL_3         1000UL
 #define RC_FAILSAFE_CHANNEL_4         1500UL
 #define RC_FAILSAFE_CHANNEL_5         1000UL
 #define RC_FAILSAFE_CHANNEL_6         1000UL
-#define RC_FAILSAFE_CHANNEL_7         1000UL 
-#define RC_FAILSAFE_CHANNEL_8         1000UL 
+#define RC_FAILSAFE_CHANNEL_7         1000UL
+#define RC_FAILSAFE_CHANNEL_8         1000UL
 
 /*
-When signal is lost 1= ppm waveform remain on with failsafe values, 0= ppm waveform is off 
+When signal is lost 1= ppm waveform remain on with failsafe values, 0= ppm waveform is off
 For use with Paparazzi use "0", the autopilot has it's own failsafe values when PPM signal is lost.
 The above failsafe values will kick in only if the servo inputs are lost which cannot happen with
 a receiver with dsp processing that provides "hold" or "failsafe" features.
@@ -54,30 +54,30 @@ except if the throttle channel is used as an indication by setting the "RC_LOST_
 If you use the throttle channel as an indication that the TX signal is lost then:
 RC_USE_FAILSAFE set to 0 means that the ppm output will be shut down and if you set
 RC_USE_FAILSAFE  to 1 the ppm output will NOT shut down but it will now output the failsafe values
-defined above. 
+defined above.
 */
-#define RC_USE_FAILSAFE               0  
+#define RC_USE_FAILSAFE               0
 
 /*
 The channel number (1,2,3...7,8) that will be used as a receiver ready indicator.
 If set above 0 then this channel should be always connected otherwise
 the PPM output will not be enabled as the ppm encoder will wait for ever for this channel
-to produce a valid servo pulse. 
+to produce a valid servo pulse.
 If 0 then the first connected channel going from channel 1 to 8 will be used, in other words
 which ever connected channel comes on first it will indicate that the receiver is operational.
 The detection of all connected channels is independent of this setting, this channel
-is used as an indication that the receiver is up and running only. 
+is used as an indication that the receiver is up and running only.
 */
 #define RC_RX_READY_CHANNEL           0     /* 0 = No channel will be exclusively checked. */
 
-/* 
+/*
 The default value for the rc signal lost indicator channel and it's threshold value in microseconds .
 If the value is above 1500 microseconds then when the signal lost indicator channel servo pulse exceeds
 RC_LOST_THRESHOLD then the ppm output will be shut down.
 If the value is below 1500 microseconds then when the signal lost indicator channel servo pulse gets lower than
 RC_LOST_THRESHOLD then the ppm output will be shut down.
 If the RC_USE_FAILSAFE is set to 1 then the ppm output will not stop producing pulses but now
-the ppm wavetrain will contain the failsafe values defined in the beginning of this file. 
+the ppm wavetrain will contain the failsafe values defined in the beginning of this file.
 The RC_LOST_CHANNEL must be a value from 1 to 8.
 0 = the function is disabled. BE CAREFULL, 0 IS A VERY DANGEROUS OPTION !!!
 */
@@ -89,7 +89,7 @@ The RC_LOST_CHANNEL must be a value from 1 to 8.
 #define PPM_FILTER_WINDOW             3      /* ppm filter window size, larger is less jitter but longer latency, default 3, seems to work with 2 and 1 as well */
 
 /********************************************************************************************************/
-/* 
+/*
                                       D A N G E R
 The below settings are good for almost every situation and probably you don't need to change them.
 Be carefull because you can cause a lot of problems if you change anything without knowing
@@ -113,7 +113,7 @@ exactly what you are doing.
 #define RC_THROTTLE_CH_OFFSET_PW      25      /* in microseconds. */
 
 /********************************************************************************************************/
-/*                                  USER CONFIGURATION BLOCK END                                        */ 
+/*                                  USER CONFIGURATION BLOCK END                                        */
 /********************************************************************************************************/
 
 #endif //#ifndef SERVO2PPM_SETTINGS_H
