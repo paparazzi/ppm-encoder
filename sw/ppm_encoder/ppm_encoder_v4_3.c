@@ -1030,168 +1030,212 @@ return;
 /*12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12-12*/
 
 #if !defined(RC_MIN_LATENCY) || RC_MIN_LATENCY == 0
+//Added this to change filter size
+#if !defined(PPM_FILTER_WINDOW)
+#define PPM_FILTER_WINDOW 3
+#endif
 
 void get_pw_of_connected_channels(unsigned char reset)
 {
 
-unsigned short        pw_of_channel[RC_SERVO_INPUT_CHANNELS];
-#if (__GNUC__ != 4 || __GNUC_MINOR__ != 2)
-unsigned char         pin_reg_buffer0 = 0;
-static unsigned char  pin_reg_buffer1 = 0;
-#endif
-unsigned char         channels_to_check=0;
-unsigned char         channel_status = 0;
-unsigned char         channel = 0;
-unsigned int          pw_buffer = 0;
-unsigned int          time_stamp = 0;
-static unsigned char  sample = 0;
-static unsigned short pw_memory[RC_SERVO_INPUT_CHANNELS][3];
+  unsigned short        pw_of_channel[RC_SERVO_INPUT_CHANNELS];
+  #if (__GNUC__ != 4 || __GNUC_MINOR__ != 2)
+  unsigned char         pin_reg_buffer0 = 0;
+  static unsigned char  pin_reg_buffer1 = 0;
+  #endif
+  unsigned char         channels_to_check=0;
+  unsigned char         channel_status = 0;
+  unsigned char         channel = 0;
+  unsigned int          pw_buffer = 0;
+  unsigned int          time_stamp = 0;
+  static unsigned char  sample = 0;
+  static unsigned short pw_memory[RC_SERVO_INPUT_CHANNELS][PPM_FILTER_WINDOW];
 
-static signed char    pw_change[RC_SERVO_INPUT_CHANNELS];
+  static signed char    pw_change[RC_SERVO_INPUT_CHANNELS];
 
-unsigned char         x = 0;
-unsigned char         y = 0;
+  unsigned char         x = 0;
+  unsigned char         y = 0;
 
 
 /*------------------------------------------------------------------------------------------------------*/
 /* THIS IS FOR RECEIVERS THAT DO NOT OUTPUT THE SERVO PULSES AT THE SAME TIME AND HAVE A SOME DEAD TIME */
 /*------------------------------------------------------------------------------------------------------*/
-if(reset)
- {
-    for(x=0; x < RC_SERVO_INPUT_CHANNELS; x++){ for(y=0; y < 3; y++){ pw_memory[y][x] = 0; }  }
+  if(reset)
+  {
+    //CHANGED BELOW LINE, NEEDED TO SWAP [y][x] to [x][y] in pw_memory
+    for(x=0; x < RC_SERVO_INPUT_CHANNELS; x++)
+    {
+      for(y=0; y < PPM_FILTER_WINDOW; y++)
+      {
+        pw_memory[x][y] = 0;
+      }
+    }
     sample = 0;
-    for(x=0; x < RC_SERVO_INPUT_CHANNELS; x++){ pw_change[x] = 0; }
+    for(x=0; x < RC_SERVO_INPUT_CHANNELS; x++)
+    {
+      pw_change[x] = 0;
+    }
     RESET_START_TIMER0(); 
     pin_reg_buffer1 = RC_SERVO_PORT_PIN_REG & channel_mask;
     RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
     pin_interrupt_detected = 0;
- }
-    wdt_reset();
-    channel_mask_buffer = channel_mask;
-    channel_status = 0;
-    /* This is the main pulse measuring loop. It makes sure that only complete servo pulses are measured. */
-    while(channel_mask_buffer)
-        { 
-           x=0;
-           y=1;
-           /* Wait until a pin change state. */
-           while( pin_interrupt_detected == 0 );
-           asm("cli");
-           time_stamp = isr_time_stamp;
-           pin_interrupt_detected = 0; 
-           RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT); 
-           pin_reg_buffer0 = RC_SERVO_PORT_PIN_REG;
-           asm("sei");
-           //Only the pins that changed state will be examined.
-           pin_reg_buffer0 &= channel_mask_buffer;
-           channels_to_check = pin_reg_buffer1 ^ pin_reg_buffer0;
-           if(channels_to_check)
-            {
-               while(x < RC_SERVO_INPUT_CHANNELS)
-                   {
-                     if(channels_to_check & y)
-                      {
-                         if( (pin_reg_buffer0 & y) ) /* if the pin is high then... */ 
-                          {
-                             pw_of_channel[x] = time_stamp;
-                             channel_status |= y;
-                                        
-                          }else{
-                                  if(channel_status & y)
-                                   { 
-                                      channel_mask_buffer &= (~y);
-                                      pw_of_channel[x] = time_stamp - pw_of_channel[x];
-                                   }
-                               }   // End of "if( (pin_reg_buffer0 & y) )...else..." statement         
-                      }	// End of "if(channels_to_check & y)" statement.
-                     x++;
-                     y=(y<<1);
-                   }   //End of while(x < RC_SERVO_INPUT_CHANNELS) loop.
-               pin_reg_buffer1 = pin_reg_buffer0; 
-            }
-        }	// End of "while(channel_mask_buffer)" loop.
-RESET_START_TIMER0();
-if (wdt_timeout){
-   WDTCSR |= (1<<WDIE); 
-   wdt_reset();
-   wdt_timeout = 0; 
-   channel_mask_buffer = 0xFF; 
-}  
-/*------------------------------------------------------------------------------------------------------*/
-/*                              CHECK THE RX LOST INDICATOR CHANNEL                                     */
-/*------------------------------------------------------------------------------------------------------*/
-#if defined(RC_LOST_CHANNEL) && RC_LOST_CHANNEL > 0
-if( (channel_mask & (1<<rc_lost_channel)) )
- { 
-    if(channel_mask_buffer  == 0)
-     {
-        pw_buffer = pw_of_channel[rc_lost_channel];
-        if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL)  )
-         { 
-            if(ppm_off_threshold > RC_SERVO_CENTER_PW_VAL)
-             { 
-                if(pw_buffer >= ppm_off_threshold){ channel_mask_buffer = 0xFF; return; }
-
-             }else{
-                     if(pw_buffer <= ppm_off_threshold){ channel_mask_buffer = 0xFF; return; }
-                  } 
-         }
-     }
- }
-#endif
-/*------------------------------------------------------------------------------------------------------*/
-/*                                        SIMPLE PPM FILTER                                             */
-/*------------------------------------------------------------------------------------------------------*/
-
-if(servo_signals_lost == 0 && channel_mask_buffer == 0)
- {
-    for(channel=0; channel < RC_SERVO_INPUT_CHANNELS; channel++)
+  }
+  wdt_reset();
+  channel_mask_buffer = channel_mask;
+  channel_status = 0;
+  /* This is the main pulse measuring loop. It makes sure that only complete servo pulses are measured. */
+  while(channel_mask_buffer)
+  { 
+    x=0;
+    y=1;
+    /* Wait until a pin change state. */
+    while( pin_interrupt_detected == 0 );
+    asm("cli");
+    time_stamp = isr_time_stamp;
+    pin_interrupt_detected = 0; 
+    RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT); 
+    pin_reg_buffer0 = RC_SERVO_PORT_PIN_REG;
+    asm("sei");
+    //Only the pins that changed state will be examined.
+    pin_reg_buffer0 &= channel_mask_buffer;
+    channels_to_check = pin_reg_buffer1 ^ pin_reg_buffer0;
+    if(channels_to_check)
+    {
+      while(x < RC_SERVO_INPUT_CHANNELS)
       {
-         if(channel_mask & (1<<channel))
-          {   
-             if( (pw_of_channel[channel] > RC_SERVO_MIN_PW_VAL) && (pw_of_channel[channel] < RC_SERVO_MAX_PW_VAL)  )
-              { 
-                 pw_buffer = pw_of_channel[channel];
-                 x = 1;
-                 for(y=0; y<3; y++){ if(pw_memory[channel][y]){ pw_buffer += pw_memory[channel][y]; x++; } }
-                 pw_buffer /= x;
-                 pw_memory[channel][sample] = pw_of_channel[channel];
-//                 isr_channel_pw[channel]= pw_buffer;
-                 // The number 10 represent timer ticks and not microseconds.
-                 if(pw_buffer >= (isr_channel_pw[channel]+10) || pw_buffer <= (isr_channel_pw[channel]-10))
-                  { 
-                     isr_channel_pw[channel]= pw_buffer;
-                     pw_change[channel] = 0;   
+        if(channels_to_check & y)
+        {
+          if( (pin_reg_buffer0 & y) ) /* if the pin is high then... */ 
+          {
+            pw_of_channel[x] = time_stamp;
+            channel_status |= y;
+          }
+          else
+          {
+            if(channel_status & y)
+            { 
+              channel_mask_buffer &= (~y);
+              pw_of_channel[x] = time_stamp - pw_of_channel[x];
+            }
+          }   // End of "if( (pin_reg_buffer0 & y) )...else..." statement         
+        }	// End of "if(channels_to_check & y)" statement.
+        x++;
+        y=(y<<1);
+      }   //End of while(x < RC_SERVO_INPUT_CHANNELS) loop.
+      pin_reg_buffer1 = pin_reg_buffer0; 
+    }
+  }	// End of "while(channel_mask_buffer)" loop.
+  RESET_START_TIMER0();
+  if (wdt_timeout){
+    WDTCSR |= (1<<WDIE); 
+    wdt_reset();
+    wdt_timeout = 0; 
+    channel_mask_buffer = 0xFF; 
+  }  
+  /*------------------------------------------------------------------------------------------------------*/
+  /*                              CHECK THE RX LOST INDICATOR CHANNEL                                     */
+  /*------------------------------------------------------------------------------------------------------*/
+#if defined(RC_LOST_CHANNEL) && RC_LOST_CHANNEL > 0
+  if( (channel_mask & (1<<rc_lost_channel)) )
+  { 
+    if(channel_mask_buffer  == 0)
+    {
+      pw_buffer = pw_of_channel[rc_lost_channel];
+      if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL)  )
+      { 
+        if(ppm_off_threshold > RC_SERVO_CENTER_PW_VAL)
+        { 
+          if(pw_buffer >= ppm_off_threshold)
+          {
+            channel_mask_buffer = 0xFF;
+            return;
+          }
+        }
+        else
+        {
+          if(pw_buffer <= ppm_off_threshold)
+          {
+            channel_mask_buffer = 0xFF;
+            return;
+          }
+        }
+      }
+    }
+  }
+#endif //defined(RC_LOST_CHANNEL) && RC_LOST_CHANNEL > 0
+  /*------------------------------------------------------------------------------------------------------*/
+  /*                                        SIMPLE PPM FILTER                                             */
+  /*------------------------------------------------------------------------------------------------------*/
 
-                  }else if(pw_of_channel[channel] > (isr_channel_pw[channel]+1))
-                         {
-                            if(pw_change[channel] < 0){ pw_change[channel] = 0; } 
-                            if(pw_change[channel] <= RC_NUMBER_OF_SAMPLES)
-                             {
-                                isr_channel_pw[channel]= pw_buffer;
-                          
-                             }else{  pw_change[channel]++; } 
-                   
-                         }else if(pw_of_channel[channel] < (isr_channel_pw[channel]-1))
-                                {
-                                    if(pw_change[channel] > 0){ pw_change[channel] = 0; } 
-                                    if(pw_change[channel] <= -(RC_NUMBER_OF_SAMPLES))
-                                     {
-                                        isr_channel_pw[channel]= pw_buffer;
-                                     
-                                     }else{ pw_change[channel]--; }
-
-                                 }else{ pw_change[channel] = 0; }
-
-
-              }   //End of "if( (pw_of_channel[channel] > RC_SERVO_MIN_PW_VAL) && (pw_of_channel[channel] < RC_SERVO_MAX_PW_VAL)  )" statement.
-          }   //End of " if(channel_mask & (1<<channel))" statement
-      }   //End of "for(channel=0; channel < RC_SERVO_INPUT_CHANNELS; channel++)" loop
+  if(servo_signals_lost == 0 && channel_mask_buffer == 0)
+  {
+    for(channel=0; channel < RC_SERVO_INPUT_CHANNELS; channel++)
+    {
+      if(channel_mask & (1<<channel))
+      {   
+        if( (pw_of_channel[channel] > RC_SERVO_MIN_PW_VAL) && (pw_of_channel[channel] < RC_SERVO_MAX_PW_VAL)  )
+        { 
+          pw_buffer = pw_of_channel[channel];
+          x = 1;
+          for(y=0; y<PPM_FILTER_WINDOW; y++)
+          {
+            if(pw_memory[channel][y])
+            {
+              pw_buffer += pw_memory[channel][y];
+              x++;
+            }
+          }
+          pw_buffer /= x;
+          pw_memory[channel][sample] = pw_of_channel[channel];
+    //      isr_channel_pw[channel]= pw_buffer;
+          // The number 10 represent timer ticks and not microseconds.
+          if(pw_buffer >= (isr_channel_pw[channel]+10) || pw_buffer <= (isr_channel_pw[channel]-10))
+          { 
+            isr_channel_pw[channel]= pw_buffer;
+            pw_change[channel] = 0;   
+          }
+          else if(pw_of_channel[channel] > (isr_channel_pw[channel]+1))
+          {
+            if(pw_change[channel] < 0)
+            {
+              pw_change[channel] = 0;
+            } 
+            if(pw_change[channel] >= RC_NUMBER_OF_SAMPLES) //CHANGED THIS TO MATCH THE NO FILTER VERSION, but that one isn't working?
+            {
+              isr_channel_pw[channel]= pw_buffer;
+            }
+            else
+            {
+              pw_change[channel]++;
+            } 
+          }
+          else if(pw_of_channel[channel] < (isr_channel_pw[channel]-1))
+          {
+            if(pw_change[channel] > 0)
+            {
+              pw_change[channel] = 0;
+            } 
+            if(pw_change[channel] <= -(RC_NUMBER_OF_SAMPLES))
+            {
+              isr_channel_pw[channel]= pw_buffer;
+            }
+            else
+            {
+              pw_change[channel]--;
+            }
+          }
+          else
+          {
+            pw_change[channel] = 0;
+          }
+        }   //End of "if( (pw_of_channel[channel] > RC_SERVO_MIN_PW_VAL) && (pw_of_channel[channel] < RC_SERVO_MAX_PW_VAL)  )" statement.
+      }   //End of " if(channel_mask & (1<<channel))" statement
+    }   //End of "for(channel=0; channel < RC_SERVO_INPUT_CHANNELS; channel++)" loop
     sample++;
-    if(sample >=3 ){ sample = 0; }
- }   //End of "if(servo_signals_lost == 0)" statement.
+    if(sample >=PPM_FILTER_WINDOW ){ sample = 0; }
+  }   //End of "if(servo_signals_lost == 0)" statement.
 
-return;
+  return;
 }
 
 #else //#if !defined(RC_MIN_LATENCY) || RC_MIN_LATENCY == 0
@@ -1201,118 +1245,154 @@ return;
 void get_pw_of_connected_channels(unsigned char reset)
 {
 
-unsigned short        pw_of_channel[RC_SERVO_INPUT_CHANNELS];
-static signed char    pw_change[RC_SERVO_INPUT_CHANNELS];
-unsigned char         channel = 0;
-unsigned short        isr_pw_buffer = 0;
-#if (__GNUC__ != 4 || __GNUC_MINOR__ != 2)
-unsigned char         pin_reg_buffer0 = 0;
-static unsigned char  pin_reg_buffer1 = 0;
-#endif
-unsigned char         channels_to_check=0;
-unsigned char         channel_status = 0;
-unsigned short        pw_buffer = 0, time_stamp = 0;
-unsigned char         x = 0;
-unsigned char         y = 0;
+  unsigned short        pw_of_channel[RC_SERVO_INPUT_CHANNELS];
+  static signed char    pw_change[RC_SERVO_INPUT_CHANNELS];
+  unsigned char         channel = 0;
+  unsigned short        isr_pw_buffer = 0;
+  #if (__GNUC__ != 4 || __GNUC_MINOR__ != 2)
+  unsigned char         pin_reg_buffer0 = 0;
+  static unsigned char  pin_reg_buffer1 = 0;
+  #endif
+  unsigned char         channels_to_check=0;
+  unsigned char         channel_status = 0;
+  unsigned int          pw_buffer = 0, time_stamp = 0;
+  unsigned char         x = 0;
+  unsigned char         y = 0;
 
-if(reset)
- {
+  if(reset)
+  {
+    //added this for loop to make consistent with filtered version
+    for(x=0; x < RC_SERVO_INPUT_CHANNELS; x++)
+    {
+      pw_change[x] = 0;
+    }
     RESET_START_TIMER0(); 
     pin_reg_buffer1 = (RC_SERVO_PORT_PIN_REG & channel_mask);
     RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT);
     pin_interrupt_detected = 0; 
- }
-wdt_reset();
-channel_mask_buffer = channel_mask;
-channel_status = 0;
-while(channel_mask_buffer)
-    { 
-       x=0;
-       y=1;
-       /* Wait until a pin change state. */
-       while( pin_interrupt_detected == 0 );
-       asm("cli");
-       time_stamp = isr_time_stamp;
-       pin_interrupt_detected = 0; 
-       RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT); 
-       pin_reg_buffer0 = RC_SERVO_PORT_PIN_REG;
-       asm("sei");
-       //Only the pins that changed state will be examined.
-       pin_reg_buffer0 &= channel_mask_buffer;
-       channels_to_check = pin_reg_buffer1 ^ pin_reg_buffer0;
-       if(channels_to_check)
+  }
+  wdt_reset();
+  channel_mask_buffer = channel_mask;
+  channel_status = 0;
+  while(channel_mask_buffer)
+  { 
+    x=0;
+    y=1;
+    /* Wait until a pin change state. */
+    while( pin_interrupt_detected == 0 );
+    asm("cli");
+    time_stamp = isr_time_stamp;
+    pin_interrupt_detected = 0; 
+    RC_PIN_INT_FLAG_REG |= (1<<RC_PIN_INT_FLAG_BIT); 
+    pin_reg_buffer0 = RC_SERVO_PORT_PIN_REG;
+    asm("sei");
+    //Only the pins that changed state will be examined.
+    pin_reg_buffer0 &= channel_mask_buffer;
+    channels_to_check = pin_reg_buffer1 ^ pin_reg_buffer0;
+    if(channels_to_check)
+    {
+      while(x<RC_SERVO_INPUT_CHANNELS)
+      {
+        if(channels_to_check & y)
         {
-           while(x<RC_SERVO_INPUT_CHANNELS)
-               {
-                  if(channels_to_check & y)
-                   {
-                      if( (pin_reg_buffer0 & y) )         // if the pin is high then...  
-                       {
-                          pw_of_channel[x] = time_stamp;  //Store the time that the servo pulse started.
-                          channel_status |= y;            //Signal that the servo pulse started. 
-                                         
-                       }else{
-		               // If and only if the channel has been previously high then that is the end of the pulse.
-                               if(channel_status & y)
-                                {
-                                   channel_mask_buffer &= (~y);
-                                   pw_buffer = time_stamp - pw_of_channel[x];
-                                   if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL) )
-                                    { 
+          if( (pin_reg_buffer0 & y) )         // if the pin is high then...  
+          {
+            pw_of_channel[x] = time_stamp;  //Store the time that the servo pulse started.
+            channel_status |= y;            //Signal that the servo pulse started. 
+          }
+          else
+          {
+  		      // If and only if the channel has been previously high then that is the end of the pulse.
+            if(channel_status & y)
+            {
+              channel_mask_buffer &= (~y);
+              pw_buffer = time_stamp - pw_of_channel[x];
+              if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL) )
+              { 
 #if defined(RC_LOST_CHANNEL) && RC_LOST_CHANNEL > 0
-                                       if(x == rc_lost_channel)
-                                        {
-                                           if(ppm_off_threshold > RC_SERVO_CENTER_PW_VAL)
-                                            { 
-                                               if(pw_buffer >= ppm_off_threshold){ channel_mask_buffer = 0xFF; return; }
-
-                                            }else{
-                                                   if(pw_buffer <= ppm_off_threshold){ channel_mask_buffer = 0xFF; return; }
-                                                 }
-                                        }
+                if(x == rc_lost_channel)
+                {
+                  if(ppm_off_threshold > RC_SERVO_CENTER_PW_VAL)
+                  { 
+                    if(pw_buffer >= ppm_off_threshold)
+                    {
+                      channel_mask_buffer = 0xFF;
+                      return;
+                    }
+                  }
+                  else
+                  {
+                    if(pw_buffer <= ppm_off_threshold)
+                    {
+                      channel_mask_buffer = 0xFF;
+                      return;
+                    }
+                  }
+                }
 #endif
-                                       if (servo_signals_lost == 0){
-                                          isr_pw_buffer = isr_channel_pw[channel];
-                                          if (pw_buffer >= (isr_pw_buffer+10) || pw_buffer <= (isr_pw_buffer-10)){ 
-                                             isr_channel_pw[channel]= pw_buffer;
-                                             pw_change[channel] = 0;   
+                if (servo_signals_lost == 0)
+                {
+                  isr_pw_buffer = isr_channel_pw[channel];
+                  if (pw_buffer >= (isr_pw_buffer+10) || pw_buffer <= (isr_pw_buffer-10))
+                  { 
+                    isr_channel_pw[channel]= pw_buffer;
+                    pw_change[channel] = 0;   
+                  }
+                  else if (pw_of_channel[channel] > (isr_pw_buffer+1))
+                  {
+                    if(pw_change[channel] < 0)
+                    {
+                      pw_change[channel] = 0;
+                    } 
+                    if (pw_change[channel] >= RC_NUMBER_OF_SAMPLES)
+                    {
+                      isr_channel_pw[channel]= pw_buffer;
+                    }
+                    else
+                    {
+                      pw_change[channel]++;
+                    } 
+                  }
+                  else if (pw_of_channel[channel] < (isr_pw_buffer-1))
+                  {
+                    if(pw_change[channel] > 0)
+                    {
+                      pw_change[channel] = 0;
+                    } 
+                    if (pw_change[channel] <= -(RC_NUMBER_OF_SAMPLES))
+                    {
+                      isr_channel_pw[channel]= pw_buffer;          
+                    }
+                    else
+                    {
+                      pw_change[channel]--;
+                    } 
 
-                                          }else if (pw_of_channel[channel] > (isr_pw_buffer+1)){
-                                                   if(pw_change[channel] < 0){ pw_change[channel] = 0; } 
-                                                   if (pw_change[channel] >= RC_NUMBER_OF_SAMPLES){
-                                                      isr_channel_pw[channel]= pw_buffer;
-                                            
-                                                   }else{ pw_change[channel]++; } 
-                   
-                                                }else if (pw_of_channel[channel] < (isr_pw_buffer-1)){
-                                                         if(pw_change[channel] > 0){ pw_change[channel] = 0; } 
-                                                         if (pw_change[channel] <= -(RC_NUMBER_OF_SAMPLES)){
-                                                            isr_channel_pw[channel]= pw_buffer;
-                                                  
-                                                         }else{ pw_change[channel]--; } 
+                  }
+                  else
+                  {
+                    pw_change[channel] = 0;
+                  }
+                }
+              } // End of "if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL) )" statement. 
+            } // End of "if(channel_status & y)" statement.
+          }   // End of "if( (pin_reg_buffer0 & y) )...else..." statement         
+        }	// End of "if(channels_to_check & y)" statement.
+        x++;
+        y=(y<<1);
+      }   // End of "while(x<RC_SERVO_INPUT_CHANNELS)" loop.
+    }
+    pin_reg_buffer1 = pin_reg_buffer0; 
+  }// End of "while(channel_mask_buffer)" loop.
+  RESET_START_TIMER0();
+  if (wdt_timeout){
+     WDTCSR |= (1<<WDIE); 
+     wdt_reset();
+     wdt_timeout = 0; 
+     channel_mask_buffer = 0xFF; 
+  } 
 
-                                                      }else{ pw_change[channel] = 0; }
-                                   
-                                       }
-                                    } // End of "if( (pw_buffer > RC_SERVO_MIN_PW_VAL) && (pw_buffer < RC_SERVO_MAX_PW_VAL) )" statement. 
-                                } // End of "if(channel_status & y)" statement.
-                            }   // End of "if( (pin_reg_buffer0 & y) )...else..." statement         
-                   }	// End of "if(channels_to_check & y)" statement.
-                  x++;
-                  y=(y<<1);
-               }   // End of "while(x<RC_SERVO_INPUT_CHANNELS)" loop.
-        }
-       pin_reg_buffer1 = pin_reg_buffer0; 
-    }// End of "while(channel_mask_buffer)" loop.
-RESET_START_TIMER0();
-if (wdt_timeout){
-   WDTCSR |= (1<<WDIE); 
-   wdt_reset();
-   wdt_timeout = 0; 
-   channel_mask_buffer = 0xFF; 
-} 
-
-return;
+  return;
 }
 
 #endif

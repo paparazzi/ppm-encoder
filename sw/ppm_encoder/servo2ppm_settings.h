@@ -86,6 +86,7 @@ The RC_LOST_CHANNEL must be a value from 1 to 8.
 
 #define RC_PPM_OUTPUT_TYPE            1      /* 1 = POSITIVE PULSE, 0= NEGATIVE PULSE */
 #define RC_MIN_LATENCY                0      /* 0=allow for some latency 1=minimum latency possible. */
+#define PPM_FILTER_WINDOW             3      /* ppm filter window size, larger is less jitter but longer latency, default 3, seems to work with 2 and 1 as well */
 
 /********************************************************************************************************/
 /* 
