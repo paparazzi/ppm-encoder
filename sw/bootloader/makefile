@@ -23,16 +23,24 @@
 ######################################################################################
 
 #put the MCU clock Frequency in Hertz here (This setting is passed to all files)
-	F_CPU	= 8000000UL
+	F_CPU	= 16000000UL
 
-#put the name of the target mcu here (at90s8515, at90s8535, attiny22, atmega603 etc.)
+#put the name of the target mcu here (atmega168, atmega328p,at90s8515, at90s8535, attiny22, atmega603 etc.)
+
 	MCU = atmega168
 
 # Edit the below application start address if the program is a bootloader.
 # 0 for starting at address 0, 0x3800 is the BYTE!!! address not the word address (0x1C00)
 # of the mega168  bootloader start address (databook bootloader address * 2 = byte address).
 # Set this to 0 for normal applications
+# mega168 = 0x3800 mega328(p) = 0x7000
+
+ifeq "$(MCU)""atmega328p"
+        MEM_START = 0x7000
+endif
+ifeq "$(MCU)""atmega168"
         MEM_START = 0x3800
+endif
 
 #put the name of the target file here (without extension)
         TRG     = x_modem_bootloader_v3_2

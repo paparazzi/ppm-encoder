@@ -35,19 +35,52 @@ endif
 ######################################################################################
 
 #put the MCU clock Frequency in Hertz here (This setting is passed to all files)
-	F_CPU	= 8000000UL
+	F_CPU = 16000000UL
+
 
 #put the name of the target mcu here (at90s8515, at90s8535, attiny22, atmega603 etc.)
+ifneq "$(mcu)"""
+ifeq "$(mcu)""atmega168"
 	MCU = atmega168
+#put your appropriate Bootloader file name here (hex type with the .hex extension) 
+        BOOTLOADER = bootloader-m168-8mhz.hex
+	# The below fuse settings are for the mega168
+	#Low fuse has the same functions for the mega 328 and mega 168
+        #LOW_FUSE_168 = 0xC2
+	#High fuse sets sets the bootsize on 328 and the bodlevel in 168
+	HIGH_FUSE_168 = 0xDC
+	#Extended fuse sets the bodlevel only on 328 but it sets the bootsize on 168
+	EXTENDED_FUSE_168 = 0xF8
+	LOCK_FUSE_168 = 0xFF
+endif
+else 
+	MCU = atmega328p
+#put your appropriate Bootloader file name here (hex type with the .hex extension) 
+        BOOTLOADER = bootloader-m328p-16mhz.hex
+	# The below fuse settings are for the 328p
+	#Low fuse has the same functions for the mega 328 and mega 168
+        #LOW_FUSE_328 = 0xDF
+	#High fuse sets sets the bootsize on 328 and the bodlevel in 168
+	HIGH_FUSE_328 = 0xD8
+	#Extended fuse sets the bodlevel only on 328 but it sets the bootsize on 168
+	EXTENDED_FUSE_328 = 0xFC
+	LOCK_FUSE_328 = 0xFF
+endif
+
+ifeq "$(F_CPU)""16000000UL"
+        LOW_FUSE_328 = 0xDF
+	LOW_FUSE_168 = 0xDF
+endif
+ifeq "$(F_CPU)""8000000UL"
+        LOW_FUSE_328 = 0xC2
+	LOW_FUSE_168 = 0xC2
+endif
 
 # Edit the below application start address if the program is a bootloader.
 # 0 for starting at address 0, 0x3800 is the BYTE!!! address not the word address (0x1C00)
 # of the mega168  bootloader start address (databook bootloader address * 2 = byte address).
 # Set this to 0 for normal applications
         MEM_START = 0
-
-#put your hex type Bootloader file name here 
-        BOOTLOADER = bootloader.hex
 
 #put the name of the target file here (without extension)
         TRG     = ppm_encoder_v4_3
@@ -98,6 +131,55 @@ AVRDUDE_OVERIDE_MCU_TYPE = -F
 
 AVRDUDE_BASIC = -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER)
 AVRDUDE_FLAGS = $(AVRDUDE_BASIC) $(AVRDUDE_OVERIDE_MCU_TYPE) $(AVRDUDE_NO_VERIFY) $(AVRDUDE_VERBOSE) $(AVRDUDE_ERASE_COUNTER)
+
+#---------------- Programming Options (avrdude) ----------------
+
+# Uncomment the following if you use serial port and you need
+# an other baudrate than the default for the programmer
+#AVRDUDE_SET_BAUDRATE = -b
+#AVRDUDE_BAUDRATE = 38400
+
+AVRDUDE_WRITE_FLASH = -U flash:w:$(TRG).hex
+#AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(TARGET).eep
+AVRDUDE_READ_FUSE = -U lfuse:r:-:i -U hfuse:r:-:i -U efuse:r:-:i -U lock:r:-:i
+
+#AVRDUDE_WRITE_FUSE = -U lfuse:w:$(LOW_FUSE):m -U hfuse:w:$(HIGH_FUSE):m -U efuse:w:$(EXTENDED_FUSE):m -U lock:w:$(LOCK_FUSE):m
+ifneq "$(mcu)"""
+	AVRDUDE_WRITE_FUSE = -U lfuse:w:$(LOW_FUSE_168):m -U hfuse:w:$(HIGH_FUSE_168):m -U efuse:w:$(EXTENDED_FUSE_168):m
+else 
+	AVRDUDE_WRITE_FUSE = -U lfuse:w:$(LOW_FUSE_328):m -U hfuse:w:$(HIGH_FUSE_328):m -U efuse:w:$(EXTENDED_FUSE_328):m  
+endif
+
+
+# Uncomment the following if you want avrdude's erase cycle counter.
+# Note that this counter needs to be initialized first using -Yn,
+# see avrdude manual.
+#AVRDUDE_ERASE_COUNTER = -y
+
+# Uncomment the following if you do /not/ wish a verification to be
+# performed after programming the device.
+#AVRDUDE_NO_VERIFY = -V
+
+# Increase verbosity level. Please use this when submitting bug
+# reports about avrdude. See <http://savannah.nongnu.org/projects/avrdude>
+# to submit bug reports.
+#AVRDUDE_VERBOSE = -v -v
+
+AVRDUDE_DISABLE_SAFEMODE = -u
+AVRDUDE_QUELL_PROGRESS_OUTPUT = -q
+
+AVRDUDE_FLAGS = -p $(MCU)
+AVRDUDE_FLAGS += -P $(AVRDUDE_PORT) 
+AVRDUDE_FLAGS += -c $(AVRDUDE_PROGRAMMER)
+AVRDUDE_FLAGS += $(AVRDUDE_NO_VERIFY)
+AVRDUDE_FLAGS += $(AVRDUDE_VERBOSE)
+AVRDUDE_FLAGS += $(AVRDUDE_ERASE_COUNTER)
+
+AVRDUDE_FUSE_FLAGS = -p $(MCU) $(AVRDUDE_DISABLE_SAFEMODE)
+AVRDUDE_FUSE_FLAGS += -P $(AVRDUDE_PORT) 
+AVRDUDE_FUSE_FLAGS += -c $(AVRDUDE_PROGRAMMER)
+AVRDUDE_FUSE_FLAGS += $(AVRDUDE_QUELL_PROGRESS_OUTPUT) 
+
 
 
 ######################################################################################
@@ -187,8 +269,17 @@ addboot:  $(TRG).hex
 	  $(MERGE) $(TRG).hex -intel $(BOOTLOADER) -intel -o $(TRG)+$(BOOTLOADER) -intel
 
 # Program the flash and/or Eeprom of the mcu.  
-program: 
-	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM)
+program:	
+	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH) $(AVRDUDE_WRITE_EEPROM) 
+
+# Read device fuse bytes
+fuse_read:	
+	$(AVRDUDE) $(AVRDUDE_FUSE_FLAGS) $(AVRDUDE_READ_FUSE)
+
+# Write device fuse bytes
+fuse_write:	
+	$(AVRDUDE) $(AVRDUDE_FUSE_FLAGS) $(AVRDUDE_WRITE_FUSE)
+
 
 #make instruction to delete created files
 
