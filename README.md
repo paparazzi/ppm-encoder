@@ -62,6 +62,7 @@ Sample Commands
  - To compile the code for an ATMega168 or ATMega328 board that has a 16MHz crystal with default settings:
    
     $ cd your_ppm-encoder_directory/sw/ppm_encoder
+
     $ wine make --file=makefile.16Mhz
 
  - If working on windows, drop wine
@@ -70,3 +71,5 @@ Sample Commands
     $ avrdude -C /PATH/TO/ALTERNATE/avrdude.conf -c YOUR_PROGRAMMER_NAME -P YOUR_PROG_PORT -p YOUR_MCU -U flash:w:ppm_encoder_v4_3.hex:i
 
  - Check the avrdude help for more details and for how to check and write fuses (be careful). The alternate avrdude.conf file might be needed if your version of avrdude does not have your mcu type defined (i.e. macports avrdude can direct to the Arduino 1.0 avrdude.conf if needed)
+
+Some more example commands would be nice!
